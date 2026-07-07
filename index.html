@@ -36,15 +36,25 @@
   }
 
   /* ---- Scene ---- */
+  /* Full-bleed backdrop: the café photo fills the LARGEST viewport, so it keeps
+     going behind the browser's top/bottom toolbars — no solid band, just the image
+     continuing edge to edge. */
+  .backdrop {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: 100vh;          /* iOS treats 100vh as the tall (large) viewport — good fallback */
+    height: 100lvh;         /* explicit largest viewport: extends behind the toolbars */
+    overflow: hidden;
+    background: #160c05;
+    z-index: 0;
+  }
   .scene {
     position: fixed; top: 0; left: 0; right: 0;
     height: 100vh;          /* fallback */
-    height: 100dvh;         /* fills the real visible viewport, edge to edge, as mobile toolbars show/hide */
-    overflow: hidden;
+    height: 100dvh;         /* visible viewport — keeps the card centered in what's actually on screen */
     display: flex; align-items: center; justify-content: center;
     /* keep the card clear of the notch / home indicator without leaving white bands */
     padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
-    background: #160c05;
+    z-index: 1;
   }
   .bg {
     position: absolute; inset: -20px;
@@ -214,11 +224,14 @@
 </style>
 </head>
 <body>
-<div class="scene">
+<div class="backdrop">
   <div class="bg"></div>
   <div class="veil"></div>
   <div class="bloom"></div>
   <div class="vignette"></div>
+</div>
+
+<div class="scene">
 
   <div class="card" id="card">
 
