@@ -50,16 +50,27 @@
     position: absolute; inset: -20px;
     background-image: url('assets/cafe.jpg');
     background-size: cover; background-position: 62% center;
-    filter: blur(2px) brightness(0.6) saturate(1.08);
-    transform: scale(1.08);
+    /* brighter + sharper so the café photo reads clearly and elegantly */
+    filter: blur(1px) brightness(0.78) saturate(1.16) contrast(1.04);
+    transform: scale(1.06);
   }
   .veil {
     position: absolute; inset: 0;
-    background: linear-gradient(160deg, rgba(40,24,14,0.5) 0%, rgba(28,16,9,0.62) 55%, rgba(20,11,6,0.78) 100%);
+    /* lighter wash so the image stays visible across the whole scene */
+    background: linear-gradient(160deg, rgba(40,24,14,0.30) 0%, rgba(28,16,9,0.40) 55%, rgba(20,11,6,0.52) 100%);
+  }
+  /* Elegant framing: the café photo shows through the top and bottom margins,
+     gently deepened at the very edges so the card floats over a clean frame. */
+  .vignette {
+    position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(to bottom,
+      rgba(14,8,3,0.60) 0%, rgba(14,8,3,0.12) 14%,
+      rgba(14,8,3,0) 34%, rgba(14,8,3,0) 66%,
+      rgba(14,8,3,0.12) 86%, rgba(14,8,3,0.60) 100%);
   }
   .bloom {
     position: absolute; inset: 0;
-    background: radial-gradient(120% 80% at 30% 12%, rgba(255,214,150,0.16) 0%, rgba(255,214,150,0) 46%);
+    background: radial-gradient(120% 80% at 30% 12%, rgba(255,214,150,0.18) 0%, rgba(255,214,150,0) 46%);
   }
 
   /* ---- Card ---- */
@@ -101,7 +112,7 @@
 
   /* ---- Header ---- */
   .header { text-align: center; margin-bottom: 22px; }
-  .kicker { font-size: 12px; color: #9a5b28; font-weight: 700; margin-bottom: 8px; }
+  .kicker { font-size: 12px; color: #96733f; font-weight: 700; margin-bottom: 8px; }
   .title { font-weight: 700; line-height: 1.12; color: #3a281c; }
   .subtitle { font-size: 12.5px; color: rgba(74,53,39,0.6); margin-top: 8px; font-weight: 500; }
 
@@ -160,7 +171,7 @@
     font-size: 40px; font-weight: 700; color: #3a281c;
     direction: ltr; letter-spacing: -0.5px;
   }
-  .input-suffix { font-size: 15px; font-weight: 600; color: #b98a4e; white-space: nowrap; }
+  .input-suffix { font-size: 15px; font-weight: 600; color: #a17f4c; white-space: nowrap; }
 
   /* ---- Result panel ---- */
   .result {
@@ -207,6 +218,7 @@
   <div class="bg"></div>
   <div class="veil"></div>
   <div class="bloom"></div>
+  <div class="vignette"></div>
 
   <div class="card" id="card">
 
@@ -391,9 +403,9 @@
 
     // tabs
     const tabLabels = {
-      coffee:   t('قهوة ← ماء', 'Coffee → Water'),
-      water:    t('ماء ← قهوة', 'Water → Coffee'),
-      drinkers: t('عدد الأكواب', 'By Cups'),
+      coffee:   t('قهوة', 'Coffee'),
+      water:    t('ماء', 'Water'),
+      drinkers: t('عدد الأكواب', 'Number of Cups'),
     };
     el('tabs').querySelectorAll('.tab').forEach(b => {
       const key = b.dataset.key;
