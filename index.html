@@ -58,16 +58,16 @@
   /* ---- Card ---- */
   .card {
     position: relative;
-    width: min(90vw, 400px);
+    width: min(94vw, 430px);
     max-height: calc(100vh - 40px);
     overflow-y: auto;
     background: rgba(246,239,229,0.42);
     backdrop-filter: blur(26px) saturate(1.35);
     -webkit-backdrop-filter: blur(26px) saturate(1.35);
     border: 1px solid rgba(255,251,244,0.45);
-    border-radius: 28px;
+    border-radius: 30px;
     box-shadow: 0 34px 90px rgba(28,16,8,0.5), inset 0 1px 0 rgba(255,255,255,0.4);
-    padding: 22px 22px 28px;
+    padding: 24px 26px 32px;
     animation: floatIn 0.9s cubic-bezier(0.2,0.7,0.25,1) both;
     color: #4a3527;
   }
@@ -78,7 +78,6 @@
     display: inline-flex; gap: 4px;
     background: rgba(74,53,39,0.09);
     border-radius: 999px; padding: 4px;
-    direction: rtl; /* fixed order: العربية on the right, English on the left — never reorders with page dir */
   }
   .lang-btn {
     border: none; cursor: pointer; border-radius: 999px;
@@ -93,7 +92,7 @@
 
   /* ---- Header ---- */
   .header { text-align: center; margin-bottom: 22px; }
-  .kicker { font-size: 12px; color: #9a5b28; font-weight: 700; margin-bottom: 8px; }
+  .kicker { font-size: 12px; color: #b98a4e; font-weight: 600; margin-bottom: 8px; }
   .title { font-weight: 700; line-height: 1.12; color: #3a281c; }
   .subtitle { font-size: 12.5px; color: rgba(74,53,39,0.6); margin-top: 8px; font-weight: 500; }
 
@@ -315,7 +314,7 @@
       const b = document.createElement('button');
       b.className = 'tab';
       b.dataset.key = key;
-      b.addEventListener('click', () => { state.mode = key; state.raw = ''; el('inputField').value = ''; el('inputField').blur(); render(); });
+      b.addEventListener('click', () => { state.mode = key; state.raw = ''; el('inputField').value = ''; render(); el('inputField').focus(); });
       container.appendChild(b);
     });
   }
