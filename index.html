@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>حاسبة القهوة · Coffee Brewing Calculator</title>
+<style>
+  @font-face {
+    font-family: 'Thmanyah';
+    src: url('assets/thmanyah.otf') format('opentype');
+    font-weight: 100 900;
+    font-display: swap;
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Thmanyah', 'Segoe UI', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: #4a3527;
+  }
+  button { font-family: inherit; }
+  input { font-family: inherit; }
+  input::placeholder { color: rgba(74,53,39,0.32); }
+
+  @keyframes steamRise {
+    0%   { opacity: 0; transform: translateY(4px) scaleY(0.7); }
+    25%  { opacity: 0.55; }
+    100% { opacity: 0; transform: translateY(-26px) scaleY(1.4); }
+  }
+  @keyframes floatIn {
+    from { opacity: 0; transform: translateY(26px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* ---- Scene ---- */
+  .scene {
+    position: fixed; inset: 0; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .bg {
+    position: absolute; inset: -20px;
+    background-image: url('assets/cafe.jpg');
+    background-size: cover; background-position: 62% center;
+    filter: blur(2px) brightness(0.6) saturate(1.08);
+    transform: scale(1.08);
+  }
+  .veil {
+    position: absolute; inset: 0;
+    background: linear-gradient(160deg, rgba(40,24,14,0.5) 0%, rgba(28,16,9,0.62) 55%, rgba(20,11,6,0.78) 100%);
+  }
+  .bloom {
+    position: absolute; inset: 0;
+    background: radial-gradient(120% 80% at 30% 12%, rgba(255,214,150,0.16) 0%, rgba(255,214,150,0) 46%);
+  }
+
+  /* ---- Card ---- */
+  .card {
+    position: relative;
+    width: min(94vw, 430px);
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    background: rgba(246,239,229,0.42);
+    backdrop-filter: blur(26px) saturate(1.35);
+    -webkit-backdrop-filter: blur(26px) saturate(1.35);
+    border: 1px solid rgba(255,251,244,0.45);
+    border-radius: 30px;
+    box-shadow: 0 34px 90px rgba(28,16,8,0.5), inset 0 1px 0 rgba(255,255,255,0.4);
+    padding: 24px 26px 32px;
+    animation: floatIn 0.9s cubic-bezier(0.2,0.7,0.25,1) both;
+    color: #4a3527;
+  }
+
+  /* ---- Language toggle ---- */
+  .lang-row { display: flex; justify-content: center; margin-bottom: 18px; }
+  .lang-group {
+    display: inline-flex; gap: 4px;
+    background: rgba(74,53,39,0.09);
+    border-radius: 999px; padding: 4px;
+  }
+  .lang-btn {
+    border: none; cursor: pointer; border-radius: 999px;
+    padding: 6px 16px; font-size: 13px; font-weight: 700;
+    transition: all 0.25s ease;
+  }
+  .lang-btn.on {
+    background: #3a281c; color: #f4ece0;
+    box-shadow: 0 4px 12px rgba(28,16,8,0.28);
+  }
+  .lang-btn.off { background: transparent; color: rgba(74,53,39,0.6); }
+
+  /* ---- Header ---- */
+  .header { text-align: center; margin-bottom: 22px; }
+  .kicker { font-size: 12px; color: #b98a4e; font-weight: 600; margin-bottom: 8px; }
+  .title { font-weight: 700; line-height: 1.12; color: #3a281c; }
+  .subtitle { font-size: 12.5px; color: rgba(74,53,39,0.6); margin-top: 8px; font-weight: 500; }
+
+  /* ---- Tabs ---- */
+  .tabs {
+    display: flex; gap: 6px;
+    background: rgba(74,53,39,0.08);
+    border-radius: 16px; padding: 5px; margin-bottom: 22px;
+  }
+  .tab {
+    flex: 1; border: none; cursor: pointer; border-radius: 12px;
+    padding: 11px 4px; text-align: center; transition: all 0.25s ease;
+    font-size: 13.5px; font-weight: 700;
+  }
+  .tab.on {
+    background: #3a281c; color: #f4ece0;
+    box-shadow: 0 6px 16px rgba(28,16,8,0.28);
+  }
+  .tab.off { background: transparent; color: rgba(74,53,39,0.62); }
+
+  /* ---- Brew methods ---- */
+  .brew-block { margin-bottom: 22px; }
+  .section-label { font-size: 12px; color: rgba(74,53,39,0.62); font-weight: 600; margin-bottom: 10px; }
+  .ratios { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .pill {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    cursor: pointer; border-radius: 14px; padding: 12px 14px;
+    transition: all 0.25s ease;
+  }
+  .pill.on {
+    background: rgba(193,154,91,0.22);
+    border: 1.5px solid #c19a5b; color: #3a281c;
+    box-shadow: 0 4px 12px rgba(193,154,91,0.2);
+  }
+  .pill.off {
+    background: rgba(255,252,247,0.3);
+    border: 1.5px solid rgba(74,53,39,0.14);
+    color: rgba(74,53,39,0.72);
+  }
+  .pill-name { font-size: 13.5px; font-weight: 700; }
+  .pill-ratio { font-size: 12px; font-weight: 600; direction: ltr; opacity: 0.85; }
+
+  /* ---- Input ---- */
+  .input-block {
+    background: rgba(255,252,247,0.4);
+    border: 1px solid rgba(255,255,255,0.45);
+    border-radius: 18px; padding: 16px 18px; margin-bottom: 20px;
+  }
+  .input-label { display: block; font-size: 12.5px; color: rgba(74,53,39,0.7); font-weight: 600; margin-bottom: 6px; }
+  .input-line {
+    display: flex; align-items: baseline; gap: 8px;
+    border-bottom: 2px solid rgba(193,154,91,0.55); padding-bottom: 4px;
+  }
+  .input-field {
+    flex: 1; min-width: 0; border: none; background: transparent; outline: none;
+    font-size: 40px; font-weight: 700; color: #3a281c;
+    direction: ltr; letter-spacing: -0.5px;
+  }
+  .input-suffix { font-size: 15px; font-weight: 600; color: #b98a4e; white-space: nowrap; }
+
+  /* ---- Result panel ---- */
+  .result {
+    position: relative;
+    background: linear-gradient(165deg, rgba(58,40,28,0.96), rgba(42,28,18,0.98));
+    border-radius: 22px; padding: 26px 20px 24px; text-align: center;
+    box-shadow: 0 16px 40px rgba(28,16,8,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
+    overflow: hidden;
+  }
+  .steam {
+    position: absolute; top: 10px; left: 0; right: 0;
+    display: flex; justify-content: center; gap: 10px; pointer-events: none;
+  }
+  .wisp {
+    display: block; width: 5px; height: 20px; border-radius: 3px;
+    background: linear-gradient(rgba(240,224,204,0.55), rgba(240,224,204,0));
+    filter: blur(1.5px);
+  }
+
+  /* single mode */
+  .main-label { font-size: 15px; color: rgba(240,224,204,0.62); font-weight: 600; margin-bottom: 8px; margin-top: 4px; }
+  .main-line { text-align: center; white-space: nowrap; line-height: 0.95; }
+  .main-num { font-size: clamp(58px, 18vw, 84px); font-weight: 700; color: #f4ecdf; letter-spacing: -2px; vertical-align: baseline; }
+  .main-unit { font-size: 17px; color: #d9ae6f; font-weight: 600; margin-inline-start: 8px; vertical-align: baseline; }
+  .sub-line { font-size: 12px; color: rgba(240,224,204,0.48); margin-top: 14px; line-height: 1.5; }
+
+  /* drinkers mode */
+  .split { display: flex; align-items: stretch; justify-content: center; gap: 4px; margin-top: 6px; }
+  .split-col { flex: 1; }
+  .split-label { font-size: 12px; color: rgba(240,224,204,0.62); font-weight: 600; margin-bottom: 6px; }
+  .split-num { font-size: clamp(38px, 12vw, 54px); font-weight: 700; color: #f2e7d8; line-height: 1; letter-spacing: -1px; }
+  .split-unit { font-size: 13px; color: #d9ae6f; font-weight: 600; margin-top: 5px; }
+  .split-divider {
+    width: 1px; margin: 4px 6px;
+    background: linear-gradient(rgba(217,174,111,0), rgba(217,174,111,0.4), rgba(217,174,111,0));
+  }
+  .drinkers-note { font-size: 12px; color: rgba(240,224,204,0.5); margin-top: 16px; line-height: 1.5; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="scene">
+  <div class="bg"></div>
+  <div class="veil"></div>
+  <div class="bloom"></div>
+
+  <div class="card" id="card">
+
+    <div class="lang-row">
+      <div class="lang-group">
+        <button class="lang-btn" id="langAr">العربية</button>
+        <button class="lang-btn" id="langEn">English</button>
+      </div>
+    </div>
+
+    <div class="header">
+      <div class="kicker" id="kicker"></div>
+      <h1 class="title" id="title"></h1>
+      <p class="subtitle" id="subtitle"></p>
+    </div>
+
+    <div class="tabs" id="tabs"></div>
+
+    <div class="brew-block">
+      <div class="section-label" id="brewLabel"></div>
+      <div class="ratios" id="ratios"></div>
+    </div>
+
+    <div class="input-block">
+      <label class="input-label" id="inputLabel" for="inputField"></label>
+      <div class="input-line">
+        <input class="input-field" id="inputField" type="text" inputmode="decimal" autocomplete="off">
+        <span class="input-suffix" id="inputSuffix"></span>
+      </div>
+    </div>
+
+    <div class="result">
+      <div class="steam" id="steam"></div>
+
+      <!-- drinkers mode -->
+      <div id="drinkersView" class="hidden">
+        <div class="split">
+          <div class="split-col">
+            <div class="split-label" id="coffeeLabel"></div>
+            <div class="split-num" id="resultCoffee"></div>
+            <div class="split-unit" id="coffeeUnit"></div>
+          </div>
+          <div class="split-divider"></div>
+          <div class="split-col">
+            <div class="split-label" id="waterLabel"></div>
+            <div class="split-num" id="resultWater"></div>
+            <div class="split-unit" id="waterUnit"></div>
+          </div>
+        </div>
+        <div class="drinkers-note" id="drinkersNote"></div>
+      </div>
+
+      <!-- single mode -->
+      <div id="singleView">
+        <div class="main-label" id="mainLabel"></div>
+        <div class="main-line">
+          <span class="main-num" id="resultMain"></span>
+          <span class="main-unit" id="mainUnit"></span>
+        </div>
+        <div class="sub-line" id="subLine"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---- Configurable defaults (exposed as tweaks in the original design) ----
+  const DEFAULT_LANGUAGE = 'ar';   // 'ar' | 'en'
+  const SHOW_STEAM = true;
+
+  const RATIO_DEFS = [
+    { key: 'espresso', ar: 'إسبريسو',   en: 'Espresso',     ratio: 2,  cup: 40  },
+    { key: 'v60',      ar: 'V60',        en: 'V60',          ratio: 16, cup: 180 },
+    { key: 'french',   ar: 'فرنش برس',   en: 'French Press', ratio: 12, cup: 200 },
+    { key: 'cold',     ar: 'كولد برو',   en: 'Cold Brew',    ratio: 15, cup: 250 },
+  ];
+
+  const state = { mode: 'coffee', ratioKey: 'v60', raw: '', lang: DEFAULT_LANGUAGE };
+
+  // ---- Numeral helpers ----
+  // Western digits -> Arabic-Indic for display (Arabic mode only)
+  function loc(s) {
+    if (state.lang === 'ar') {
+      const m = { '0':'٠','1':'١','2':'٢','3':'٣','4':'٤','5':'٥','6':'٦','7':'٧','8':'٨','9':'٩' };
+      return String(s).replace(/[0-9]/g, d => m[d]);
+    }
+    return String(s);
+  }
+  // Arabic-Indic / Persian digits -> Western for math
+  function toWestern(s) {
+    return String(s)
+      .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+      .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+      .replace(/٫/g, '.').replace(/،/g, '');
+  }
+  function fmt(n) {
+    if (!isFinite(n) || n <= 0) return '';
+    const r = Math.round(n * 10) / 10;
+    return Number.isInteger(r) ? String(r) : r.toFixed(1);
+  }
+  function num(n) { return loc(fmt(n)); }
+
+  const el = (id) => document.getElementById(id);
+
+  // ---- Build static child lists once ----
+  function buildTabs() {
+    const container = el('tabs');
+    container.innerHTML = '';
+    ['coffee', 'water', 'drinkers'].forEach(key => {
+      const b = document.createElement('button');
+      b.className = 'tab';
+      b.dataset.key = key;
+      b.addEventListener('click', () => { state.mode = key; state.raw = ''; el('inputField').value = ''; render(); el('inputField').focus(); });
+      container.appendChild(b);
+    });
+  }
+  function buildRatios() {
+    const container = el('ratios');
+    container.innerHTML = '';
+    RATIO_DEFS.forEach(d => {
+      const b = document.createElement('button');
+      b.className = 'pill';
+      b.dataset.key = d.key;
+      const name = document.createElement('span'); name.className = 'pill-name';
+      const ratio = document.createElement('span'); ratio.className = 'pill-ratio';
+      b.appendChild(name); b.appendChild(ratio);
+      b.addEventListener('click', () => { state.ratioKey = d.key; render(); });
+      container.appendChild(b);
+    });
+  }
+  function buildSteam() {
+    const container = el('steam');
+    container.innerHTML = '';
+    if (!SHOW_STEAM) return;
+    [0, 1, 2].forEach(i => {
+      const s = document.createElement('span');
+      s.className = 'wisp';
+      s.style.animation = `steamRise ${2.6 + i * 0.4}s ease-in-out ${i * 0.5}s infinite`;
+      container.appendChild(s);
+    });
+  }
+
+  // ---- Render ----
+  function render() {
+    const ar = state.lang === 'ar';
+    const t = (a, e) => (ar ? a : e);
+
+    document.documentElement.lang = ar ? 'ar' : 'en';
+    document.documentElement.dir = ar ? 'rtl' : 'ltr';
+    el('card').dir = ar ? 'rtl' : 'ltr';
+
+    const active = RATIO_DEFS.find(d => d.key === state.ratioKey) || RATIO_DEFS[1];
+    const ratio = active.ratio;
+    const cup = active.cup;
+    const styleName = ar ? active.ar : active.en;
+    const ratioStr = loc('1:' + ratio);
+
+    const n = parseFloat(toWestern(state.raw)) || 0;
+    let coffee = 0, water = 0, drinkers = 0;
+    if (state.mode === 'coffee') { coffee = n; water = n * ratio; }
+    else if (state.mode === 'water') { water = n; coffee = n / ratio; }
+    else { drinkers = n; water = n * cup; coffee = water / ratio; }
+
+    const hasValue = n > 0;
+
+    // language toggle
+    el('langAr').className = 'lang-btn ' + (ar ? 'on' : 'off');
+    el('langEn').className = 'lang-btn ' + (ar ? 'off' : 'on');
+
+    // header (Arabic keeps letters joined: no letter-spacing)
+    el('kicker').textContent = t('قهوة مختصّة', 'SPECIALTY COFFEE');
+    el('kicker').style.letterSpacing = ar ? '0' : '3px';
+    el('title').textContent = t('حاسبـة القهـوة', 'Coffee Brewing Calculator');
+    el('title').style.fontSize = ar ? '34px' : '32px';
+    el('title').style.letterSpacing = ar ? '0' : '-0.5px';
+    el('subtitle').textContent = t('اضمن النسبة المثاليّـة', 'Dial in your perfect ratio');
+    el('subtitle').style.letterSpacing = ar ? '0' : '2px';
+
+    // tabs
+    const tabLabels = {
+      coffee:   t('قهوة ← ماء', 'Coffee → Water'),
+      water:    t('ماء ← قهوة', 'Water → Coffee'),
+      drinkers: t('عدد الأكواب', 'By Cups'),
+    };
+    el('tabs').querySelectorAll('.tab').forEach(b => {
+      const key = b.dataset.key;
+      b.textContent = tabLabels[key];
+      b.className = 'tab ' + (key === state.mode ? 'on' : 'off');
+    });
+
+    // brew label + ratio pills
+    el('brewLabel').textContent = t('طريقة التحضير', 'Brew method');
+    el('brewLabel').style.letterSpacing = ar ? '0' : '0.5px';
+    el('ratios').querySelectorAll('.pill').forEach(b => {
+      const d = RATIO_DEFS.find(x => x.key === b.dataset.key);
+      b.querySelector('.pill-name').textContent = ar ? d.ar : d.en;
+      b.querySelector('.pill-ratio').textContent = loc('1:' + d.ratio);
+      b.className = 'pill ' + (d.key === state.ratioKey ? 'on' : 'off');
+    });
+
+    // input
+    const inputMeta = {
+      coffee:   { lbl: t('أدخل وزن القهوة', 'Enter coffee weight'), suffix: t('غرام', 'g'),    ph: loc('18')  },
+      water:    { lbl: t('أدخل كمية الماء', 'Enter water amount'),  suffix: t('غرام', 'g'),    ph: loc('300') },
+      drinkers: { lbl: t('عدد الأكواب', 'Number of cups'),          suffix: t('كوب', 'cups'),  ph: loc('2')   },
+    }[state.mode];
+    el('inputLabel').textContent = inputMeta.lbl;
+    el('inputSuffix').textContent = inputMeta.suffix;
+    const field = el('inputField');
+    field.placeholder = inputMeta.ph;
+    field.style.textAlign = ar ? 'right' : 'left';
+    if (field.value !== state.raw) field.value = state.raw;
+
+    const unitLabel = t('غرام', 'grams');
+
+    // result — drinkers vs single
+    const isDrinkers = state.mode === 'drinkers';
+    el('drinkersView').classList.toggle('hidden', !isDrinkers);
+    el('singleView').classList.toggle('hidden', isDrinkers);
+
+    if (isDrinkers) {
+      el('coffeeLabel').textContent = t('القهوة', 'Coffee');
+      el('waterLabel').textContent = t('الماء', 'Water');
+      el('resultCoffee').textContent = num(coffee);
+      el('resultWater').textContent = num(water);
+      el('coffeeUnit').textContent = hasValue ? unitLabel : '';
+      el('waterUnit').textContent = hasValue ? unitLabel : '';
+      el('coffeeUnit').classList.toggle('hidden', !hasValue);
+      el('waterUnit').classList.toggle('hidden', !hasValue);
+      el('drinkersNote').textContent = hasValue
+        ? t(`${num(drinkers)} كوب × ${loc(cup)} غرام لكل كوب · ${styleName} ${ratioStr}`,
+            `${fmt(drinkers)} cups × ${cup} g per cup · ${styleName} 1:${ratio}`)
+        : t(`كل كوب ${loc(cup)} غرام (${styleName})`, `${cup} g per cup (${styleName})`);
+    } else {
+      const mainVal = state.mode === 'coffee' ? water : coffee;
+      el('mainLabel').textContent = state.mode === 'coffee'
+        ? t('قَدْر الماء', 'Water needed')
+        : t('قَدْر القهوة', 'Coffee needed');
+      el('resultMain').textContent = num(mainVal);
+      el('mainUnit').textContent = hasValue ? unitLabel : '';
+      el('mainUnit').classList.toggle('hidden', !hasValue);
+      el('subLine').textContent = hasValue
+        ? (state.mode === 'coffee'
+            ? t(`من ${num(coffee)} غرام قهوة · ${styleName} ${ratioStr}`, `From ${fmt(coffee)} g coffee · ${styleName} 1:${ratio}`)
+            : t(`من ${num(water)} غرام ماء · ${styleName} ${ratioStr}`, `From ${fmt(water)} g water · ${styleName} 1:${ratio}`))
+        : t('بالعافيـة', 'Enter a number to see the result');
+    }
+  }
+
+  // ---- Wiring ----
+  el('langAr').addEventListener('click', () => { state.lang = 'ar'; render(); });
+  el('langEn').addEventListener('click', () => { state.lang = 'en'; render(); });
+  el('inputField').addEventListener('input', (e) => {
+    const cleaned = e.target.value.replace(/[^0-9٠-٩۰-۹.٫]/g, '');
+    state.raw = cleaned;
+    if (e.target.value !== cleaned) e.target.value = cleaned;
+    render();
+  });
+
+  buildTabs();
+  buildRatios();
+  buildSteam();
+  render();
+})();
+</script>
+</body>
+</html>
