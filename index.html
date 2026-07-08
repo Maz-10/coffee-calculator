@@ -85,12 +85,15 @@
   }
 
   /* ---- Card ----
-     No inner scroll: the whole card is always shown. A JS fit-to-viewport pass
-     (fitCard) scales it down to fit the visible area — even with the keyboard up —
-     so every result stays on screen without scrolling. */
+     Fixed size: the card is always min-height 818px (covers the tallest state at
+     every phone width), so selecting any option never changes its size — the free
+     space is redistributed internally instead. A JS fit-to-viewport pass (fitCard)
+     scales it to the visible area — even with the keyboard up. */
   .card {
     position: relative;
     width: min(90vw, 400px);
+    min-height: 818px;
+    display: flex; flex-direction: column;
     background: rgba(246,239,229,0.42);
     backdrop-filter: blur(26px) saturate(1.35);
     -webkit-backdrop-filter: blur(26px) saturate(1.35);
@@ -170,8 +173,11 @@
   .pill.featured .pill-name { font-size: 17px; }
   .pill.featured .pill-ratio {
     font-size: 13px;
-    position: absolute; inset-inline-end: 16px; top: 50%; transform: translateY(-50%);
+    position: absolute; top: 50%; transform: translateY(-50%);
   }
+  /* ratio sits on the left in Arabic (RTL), on the right in English (LTR) */
+  [dir="rtl"] .pill.featured .pill-ratio { left: 16px; }
+  [dir="ltr"] .pill.featured .pill-ratio { right: 16px; }
   .pill.on {
     background: rgba(193,154,91,0.22);
     border: 1.5px solid #c19a5b; color: #3a281c;
@@ -214,6 +220,9 @@
     background: rgba(255,252,247,0.4);
     border: 1px solid rgba(255,255,255,0.45);
     border-radius: 18px; padding: 12px 16px; margin-bottom: 14px;
+    /* absorb the height freed by hidden options here, so input + result stay
+       anchored at the bottom and the card's total height never changes */
+    margin-top: auto;
   }
   .input-label { display: block; font-size: 12.5px; color: rgba(74,53,39,0.7); font-weight: 600; margin-bottom: 4px; }
   .input-line {
