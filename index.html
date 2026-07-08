@@ -161,10 +161,17 @@
     cursor: pointer; border-radius: 14px; padding: 10px 14px;
     transition: all 0.25s ease;
   }
-  /* V60 — the headline choice: spans the full width and reads larger */
-  .pill.featured { grid-column: 1 / -1; padding: 15px 16px; border-radius: 16px; }
+  /* V60 — the headline choice: spans the full width and reads larger.
+     The name is centred in the frame; the ratio is pinned to the edge. */
+  .pill.featured {
+    grid-column: 1 / -1; padding: 15px 16px; border-radius: 16px;
+    position: relative; justify-content: center;
+  }
   .pill.featured .pill-name { font-size: 17px; }
-  .pill.featured .pill-ratio { font-size: 13px; }
+  .pill.featured .pill-ratio {
+    font-size: 13px;
+    position: absolute; inset-inline-end: 16px; top: 50%; transform: translateY(-50%);
+  }
   .pill.on {
     background: rgba(193,154,91,0.22);
     border: 1.5px solid #c19a5b; color: #3a281c;
