@@ -108,6 +108,9 @@
     transform-origin: center center;
     will-change: transform;
   }
+  /* smooth the one-time slide when the keyboard opens/closes (added after load so
+     the initial fit doesn't animate) */
+  .card.smooth { transition: transform 0.28s cubic-bezier(0.2,0.7,0.25,1); }
 
   /* ---- Language toggle ---- */
   .lang-row { display: flex; justify-content: center; margin-bottom: 12px; }
@@ -624,52 +627,50 @@
     fitCard();
   }
 
-  // ---- Fit-to-viewport: the card is never scrolled. Scale it down so it — and
-  //      every result — is always fully visible, even with the keyboard open. ----
+  // ---- Fit-to-viewport ----
+  // The card is a FIXED size, so its scale is computed ONCE from the full layout
+  // viewport and then FROZEN while the input is focused. The on-screen keyboard
+  // (which shrinks visualViewport, not the layout viewport) therefore never makes
+  // the card grow or shrink — no jitter. While focused we only translate the card
+  // upward so the input + result stay visible above the keyboard.
+  const CARD_H = 818;                            // the card's fixed height
+  let baseScale = 1;
   function fitCard() {
     const card = el('card');
     const scene = document.querySelector('.scene');
-    card.style.transform = 'none';               // reset to read the natural size
     const cs = getComputedStyle(scene);
     const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
     const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
-    const availH = scene.clientHeight - padY;
-    const availW = scene.clientWidth - padX;
-    const H = card.offsetHeight, W = card.offsetWidth;
-    const wScale = Math.min(1, availW / W);
+    const H = CARD_H;
+    const W = Math.min(window.innerWidth * 0.9, 400);   // matches CSS width: min(90vw,400px)
     const focused = document.activeElement === el('inputField');
-    const gap = 10;
-    let s = wScale, ty = 0;
 
-    if (H * wScale <= availH) {
-      // the whole card fits — show it all, centred
-      s = wScale;
-    } else if (focused) {
-      // typing (keyboard up): don't shrink everything. Keep the input + result
-      // readable and pin them just above the keyboard; let the header scroll off.
-      const region = card.querySelector('.input-block');
-      const priorityH = H - region.offsetTop + 8;      // input + result block
-      s = Math.min(wScale, (availH - gap) / priorityH);
-      ty = (availH - H * s) / 2 - gap;                 // anchor the card's bottom above the keyboard
-    } else {
-      // small screen, not typing — scale the whole card down to fit
-      s = Math.min(wScale, availH / H);
+    // Recompute the scale only when NOT focused; keep it frozen while typing so the
+    // size stays perfectly constant as the keyboard animates in and out.
+    if (!focused) {
+      const fullH = scene.clientHeight - padY;   // scene is 100dvh — independent of the keyboard
+      const fullW = scene.clientWidth - padX;
+      baseScale = Math.min(1, fullH / H, fullW / W);
+    }
+
+    let ty = 0;
+    const vv = window.visualViewport;
+    if (focused && vv) {
+      // pin the card's bottom just above the keyboard (translate only, no rescale)
+      const V = scene.clientHeight;
+      const Hs = H * baseScale;
+      const visibleBottom = vv.height + (vv.offsetTop || 0);
+      const over = ((V - Hs) / 2 + Hs) - (visibleBottom - 12);
+      if (over > 0) ty = -over;
     }
 
     const parts = [];
-    if (ty) parts.push('translateY(' + ty.toFixed(2) + 'px)');
-    if (s < 0.999) parts.push('scale(' + s.toFixed(4) + ')');
-    card.style.transform = parts.length ? parts.join(' ') : 'none';
+    if (ty) parts.push('translateY(' + ty.toFixed(1) + 'px)');
+    if (baseScale < 0.999) parts.push('scale(' + baseScale.toFixed(4) + ')');
+    const tf = parts.length ? parts.join(' ') : 'none';
+    if (card.style.transform !== tf) card.style.transform = tf;   // avoid redundant writes
   }
-  function syncViewport() {
-    const vv = window.visualViewport;
-    const scene = document.querySelector('.scene');
-    if (vv) {                                     // follow the visible area (keyboard-aware)
-      scene.style.height = vv.height + 'px';
-      scene.style.top = (vv.offsetTop || 0) + 'px';
-    }
-    fitCard();
-  }
+  function syncViewport() { fitCard(); }
   window.addEventListener('resize', syncViewport);
   window.addEventListener('orientationchange', () => setTimeout(syncViewport, 250));
   if (window.visualViewport) {
@@ -697,7 +698,8 @@
   buildV60Cups();
   buildSteam();
   render();
-  syncViewport();
+  fitCard();
+  requestAnimationFrame(() => el('card').classList.add('smooth'));
 })();
 </script>
 </body>
