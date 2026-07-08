@@ -123,7 +123,12 @@
   /* ---- Header ---- */
   .header { text-align: center; margin-bottom: 22px; }
   .kicker { font-size: 12px; color: #96733f; font-weight: 700; margin-bottom: 8px; }
-  .title { font-weight: 700; line-height: 1.12; color: #3a281c; }
+  /* reserve two lines of height so the card is the SAME size in Arabic (1 line)
+     and English (2 lines) — text stays vertically centred either way */
+  .title {
+    font-weight: 700; line-height: 1.12; color: #3a281c;
+    min-height: 74px; display: flex; align-items: center; justify-content: center;
+  }
   .subtitle { font-size: 12.5px; color: rgba(74,53,39,0.6); margin-top: 8px; font-weight: 500; }
 
   /* ---- Tabs ---- */
@@ -134,8 +139,10 @@
   }
   .tab {
     flex: 1; border: none; cursor: pointer; border-radius: 12px;
-    padding: 11px 4px; text-align: center; transition: all 0.25s ease;
-    font-size: 13.5px; font-weight: 700;
+    padding: 8px 4px; transition: all 0.25s ease;
+    font-size: 13.5px; font-weight: 700; line-height: 1.2;
+    /* fixed height so a single-line Arabic tab matches a wrapped English tab */
+    min-height: 56px; display: flex; align-items: center; justify-content: center; text-align: center;
   }
   .tab.on {
     background: #3a281c; color: #f4ece0;
@@ -164,6 +171,25 @@
   }
   .pill-name { font-size: 13.5px; font-weight: 700; }
   .pill-ratio { font-size: 12px; font-weight: 600; direction: ltr; opacity: 0.85; }
+
+  /* ---- V60 ratio sub-selector (shown only when V60 is chosen) ---- */
+  .v60-options { margin-top: 12px; }
+  .v60-label { font-size: 12px; color: rgba(74,53,39,0.62); font-weight: 600; margin-bottom: 8px; }
+  .v60-ratios { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .v60-pill {
+    cursor: pointer; border-radius: 12px; padding: 10px 4px; text-align: center;
+    font-size: 13px; font-weight: 700; direction: ltr; transition: all 0.25s ease;
+  }
+  .v60-pill.on {
+    background: rgba(193,154,91,0.22);
+    border: 1.5px solid #c19a5b; color: #3a281c;
+    box-shadow: 0 4px 12px rgba(193,154,91,0.2);
+  }
+  .v60-pill.off {
+    background: rgba(255,252,247,0.3);
+    border: 1.5px solid rgba(74,53,39,0.14);
+    color: rgba(74,53,39,0.72);
+  }
 
   /* ---- Input ---- */
   .input-block {
@@ -253,6 +279,10 @@
     <div class="brew-block">
       <div class="section-label" id="brewLabel"></div>
       <div class="ratios" id="ratios"></div>
+      <div class="v60-options hidden" id="v60Options">
+        <div class="v60-label" id="v60Label"></div>
+        <div class="v60-ratios" id="v60Ratios"></div>
+      </div>
     </div>
 
     <div class="input-block">
@@ -313,7 +343,11 @@
     { key: 'cold',     ar: 'كولد برو',   en: 'Cold Brew',    ratio: 15, cup: 250 },
   ];
 
-  const state = { mode: 'coffee', ratioKey: 'v60', raw: '', lang: DEFAULT_LANGUAGE };
+  // V60 can be dialled to 1:15, 1:16 or 1:17 — default 1:16
+  const V60_RATIOS = [15, 16, 17];
+  const DEFAULT_V60_RATIO = 16;
+
+  const state = { mode: 'coffee', ratioKey: 'v60', raw: '', lang: DEFAULT_LANGUAGE, v60Ratio: DEFAULT_V60_RATIO };
 
   // ---- Numeral helpers ----
   // Western digits -> Arabic-Indic for display (Arabic mode only)
@@ -366,6 +400,17 @@
       container.appendChild(b);
     });
   }
+  function buildV60() {
+    const container = el('v60Ratios');
+    container.innerHTML = '';
+    V60_RATIOS.forEach(r => {
+      const b = document.createElement('button');
+      b.className = 'v60-pill';
+      b.dataset.ratio = r;
+      b.addEventListener('click', () => { state.v60Ratio = r; render(); });
+      container.appendChild(b);
+    });
+  }
   function buildSteam() {
     const container = el('steam');
     container.innerHTML = '';
@@ -388,7 +433,7 @@
     el('card').dir = ar ? 'rtl' : 'ltr';
 
     const active = RATIO_DEFS.find(d => d.key === state.ratioKey) || RATIO_DEFS[1];
-    const ratio = active.ratio;
+    const ratio = state.ratioKey === 'v60' ? state.v60Ratio : active.ratio;
     const cup = active.cup;
     const styleName = ar ? active.ar : active.en;
     const ratioStr = loc('1:' + ratio);
@@ -431,9 +476,20 @@
     el('brewLabel').style.letterSpacing = ar ? '0' : '0.5px';
     el('ratios').querySelectorAll('.pill').forEach(b => {
       const d = RATIO_DEFS.find(x => x.key === b.dataset.key);
+      const shownRatio = d.key === 'v60' ? state.v60Ratio : d.ratio;
       b.querySelector('.pill-name').textContent = ar ? d.ar : d.en;
-      b.querySelector('.pill-ratio').textContent = loc('1:' + d.ratio);
+      b.querySelector('.pill-ratio').textContent = loc('1:' + shownRatio);
       b.className = 'pill ' + (d.key === state.ratioKey ? 'on' : 'off');
+    });
+
+    // V60 ratio sub-selector — only visible while V60 is the chosen method
+    el('v60Options').classList.toggle('hidden', state.ratioKey !== 'v60');
+    el('v60Label').textContent = t('نسبة V60', 'V60 ratio');
+    el('v60Label').style.letterSpacing = ar ? '0' : '0.5px';
+    el('v60Ratios').querySelectorAll('.v60-pill').forEach(b => {
+      const r = parseInt(b.dataset.ratio, 10);
+      b.textContent = loc('1:' + r);
+      b.className = 'v60-pill ' + (r === state.v60Ratio ? 'on' : 'off');
     });
 
     // input
@@ -497,6 +553,7 @@
 
   buildTabs();
   buildRatios();
+  buildV60();
   buildSteam();
   render();
 })();
