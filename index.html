@@ -30,9 +30,10 @@
     25%  { opacity: 0.55; }
     100% { opacity: 0; transform: translateY(-26px) scaleY(1.4); }
   }
+  /* opacity-only so it never competes with the JS fit-to-viewport scale transform */
   @keyframes floatIn {
-    from { opacity: 0; transform: translateY(26px); }
-    to   { opacity: 1; transform: none; }
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
 
   /* ---- Scene ---- */
@@ -83,26 +84,28 @@
     background: radial-gradient(120% 80% at 30% 12%, rgba(255,214,150,0.18) 0%, rgba(255,214,150,0) 46%);
   }
 
-  /* ---- Card ---- */
+  /* ---- Card ----
+     No inner scroll: the whole card is always shown. A JS fit-to-viewport pass
+     (fitCard) scales it down to fit the visible area — even with the keyboard up —
+     so every result stays on screen without scrolling. */
   .card {
     position: relative;
     width: min(90vw, 400px);
-    max-height: calc(100vh - 40px);
-    max-height: calc(100dvh - 40px);
-    overflow-y: auto;
     background: rgba(246,239,229,0.42);
     backdrop-filter: blur(26px) saturate(1.35);
     -webkit-backdrop-filter: blur(26px) saturate(1.35);
     border: 1px solid rgba(255,251,244,0.45);
     border-radius: 28px;
     box-shadow: 0 34px 90px rgba(28,16,8,0.5), inset 0 1px 0 rgba(255,255,255,0.4);
-    padding: 22px 22px 28px;
-    animation: floatIn 0.9s cubic-bezier(0.2,0.7,0.25,1) both;
+    padding: 18px 20px 20px;
+    animation: floatIn 0.7s ease both;
     color: #4a3527;
+    transform-origin: center center;
+    will-change: transform;
   }
 
   /* ---- Language toggle ---- */
-  .lang-row { display: flex; justify-content: center; margin-bottom: 18px; }
+  .lang-row { display: flex; justify-content: center; margin-bottom: 12px; }
   .lang-group {
     display: inline-flex; gap: 4px;
     background: rgba(74,53,39,0.09);
@@ -121,28 +124,27 @@
   .lang-btn.off { background: transparent; color: rgba(74,53,39,0.6); }
 
   /* ---- Header ---- */
-  .header { text-align: center; margin-bottom: 22px; }
-  .kicker { font-size: 12px; color: #96733f; font-weight: 700; margin-bottom: 8px; }
+  .header { text-align: center; margin-bottom: 14px; }
   /* reserve two lines of height so the card is the SAME size in Arabic (1 line)
      and English (2 lines) — text stays vertically centred either way */
   .title {
     font-weight: 700; line-height: 1.12; color: #3a281c;
-    min-height: 74px; display: flex; align-items: center; justify-content: center;
+    min-height: 66px; display: flex; align-items: center; justify-content: center;
   }
-  .subtitle { font-size: 12.5px; color: rgba(74,53,39,0.6); margin-top: 8px; font-weight: 500; }
+  .subtitle { font-size: 12.5px; color: rgba(74,53,39,0.6); margin-top: 6px; font-weight: 500; }
 
   /* ---- Tabs ---- */
   .tabs {
     display: flex; gap: 6px;
     background: rgba(74,53,39,0.08);
-    border-radius: 16px; padding: 5px; margin-bottom: 22px;
+    border-radius: 16px; padding: 5px; margin-bottom: 14px;
   }
   .tab {
     flex: 1; border: none; cursor: pointer; border-radius: 12px;
-    padding: 8px 4px; transition: all 0.25s ease;
+    padding: 6px 4px; transition: all 0.25s ease;
     font-size: 13.5px; font-weight: 700; line-height: 1.2;
     /* fixed height so a single-line Arabic tab matches a wrapped English tab */
-    min-height: 56px; display: flex; align-items: center; justify-content: center; text-align: center;
+    min-height: 48px; display: flex; align-items: center; justify-content: center; text-align: center;
   }
   .tab.on {
     background: #3a281c; color: #f4ece0;
@@ -151,19 +153,24 @@
   .tab.off { background: transparent; color: rgba(74,53,39,0.62); }
 
   /* ---- Brew methods ---- */
-  .brew-block { margin-bottom: 22px; }
-  .section-label { font-size: 12px; color: rgba(74,53,39,0.62); font-weight: 600; margin-bottom: 10px; }
+  .brew-block { margin-bottom: 14px; }
+  .section-label { font-size: 12px; color: rgba(74,53,39,0.62); font-weight: 600; margin-bottom: 8px; }
   .ratios { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .pill {
     display: flex; align-items: center; justify-content: space-between; gap: 6px;
-    cursor: pointer; border-radius: 14px; padding: 12px 14px;
+    cursor: pointer; border-radius: 14px; padding: 10px 14px;
     transition: all 0.25s ease;
   }
+  /* V60 — the headline choice: spans the full width and reads larger */
+  .pill.featured { grid-column: 1 / -1; padding: 15px 16px; border-radius: 16px; }
+  .pill.featured .pill-name { font-size: 17px; }
+  .pill.featured .pill-ratio { font-size: 13px; }
   .pill.on {
     background: rgba(193,154,91,0.22);
     border: 1.5px solid #c19a5b; color: #3a281c;
     box-shadow: 0 4px 12px rgba(193,154,91,0.2);
   }
+  .pill.featured.on { box-shadow: 0 8px 22px rgba(193,154,91,0.32); }
   .pill.off {
     background: rgba(255,252,247,0.3);
     border: 1.5px solid rgba(74,53,39,0.14);
@@ -173,11 +180,11 @@
   .pill-ratio { font-size: 12px; font-weight: 600; direction: ltr; opacity: 0.85; }
 
   /* ---- V60 ratio sub-selector (shown only when V60 is chosen) ---- */
-  .v60-options { margin-top: 12px; }
-  .v60-label { font-size: 12px; color: rgba(74,53,39,0.62); font-weight: 600; margin-bottom: 8px; }
+  .v60-options { margin-top: 10px; }
+  .v60-label { font-size: 12px; color: rgba(74,53,39,0.62); font-weight: 600; margin-bottom: 6px; }
   .v60-ratios { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .v60-pill {
-    cursor: pointer; border-radius: 12px; padding: 10px 4px; text-align: center;
+    cursor: pointer; border-radius: 12px; padding: 8px 4px; text-align: center;
     font-size: 13px; font-weight: 700; direction: ltr; transition: all 0.25s ease;
   }
   .v60-pill.on {
@@ -191,7 +198,7 @@
     color: rgba(74,53,39,0.72);
   }
   .v60-cups { grid-template-columns: repeat(2, 1fr); }
-  .v60-cup-pill { display: flex; flex-direction: column; gap: 3px; padding: 9px 4px; }
+  .v60-cup-pill { display: flex; flex-direction: column; gap: 2px; padding: 7px 4px; }
   .cup-name { font-size: 13px; font-weight: 700; }
   .cup-grams { font-size: 11px; font-weight: 600; opacity: 0.72; direction: ltr; }
 
@@ -199,16 +206,16 @@
   .input-block {
     background: rgba(255,252,247,0.4);
     border: 1px solid rgba(255,255,255,0.45);
-    border-radius: 18px; padding: 16px 18px; margin-bottom: 20px;
+    border-radius: 18px; padding: 12px 16px; margin-bottom: 14px;
   }
-  .input-label { display: block; font-size: 12.5px; color: rgba(74,53,39,0.7); font-weight: 600; margin-bottom: 6px; }
+  .input-label { display: block; font-size: 12.5px; color: rgba(74,53,39,0.7); font-weight: 600; margin-bottom: 4px; }
   .input-line {
     display: flex; align-items: baseline; gap: 8px;
     border-bottom: 2px solid rgba(193,154,91,0.55); padding-bottom: 4px;
   }
   .input-field {
     flex: 1; min-width: 0; border: none; background: transparent; outline: none;
-    font-size: 40px; font-weight: 700; color: #3a281c;
+    font-size: 34px; font-weight: 700; color: #3a281c;
     direction: ltr; letter-spacing: -0.5px;
   }
   .input-suffix { font-size: 15px; font-weight: 600; color: #a17f4c; white-space: nowrap; }
@@ -217,7 +224,7 @@
   .result {
     position: relative;
     background: linear-gradient(165deg, rgba(58,40,28,0.96), rgba(42,28,18,0.98));
-    border-radius: 22px; padding: 26px 20px 24px; text-align: center;
+    border-radius: 22px; padding: 18px 18px 18px; text-align: center;
     box-shadow: 0 16px 40px rgba(28,16,8,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
     overflow: hidden;
   }
@@ -232,23 +239,23 @@
   }
 
   /* single mode */
-  .main-label { font-size: 15px; color: rgba(240,224,204,0.62); font-weight: 600; margin-bottom: 8px; margin-top: 4px; }
+  .main-label { font-size: 14px; color: rgba(240,224,204,0.62); font-weight: 600; margin-bottom: 4px; margin-top: 2px; }
   .main-line { text-align: center; white-space: nowrap; line-height: 0.95; }
-  .main-num { font-size: clamp(58px, 18vw, 84px); font-weight: 700; color: #f4ecdf; letter-spacing: -2px; vertical-align: baseline; }
-  .main-unit { font-size: 17px; color: #d9ae6f; font-weight: 600; margin-inline-start: 8px; vertical-align: baseline; }
-  .sub-line { font-size: 12px; color: rgba(240,224,204,0.48); margin-top: 14px; line-height: 1.5; }
+  .main-num { font-size: clamp(46px, 14vw, 64px); font-weight: 700; color: #f4ecdf; letter-spacing: -2px; vertical-align: baseline; }
+  .main-unit { font-size: 16px; color: #d9ae6f; font-weight: 600; margin-inline-start: 8px; vertical-align: baseline; }
+  .sub-line { font-size: 12px; color: rgba(240,224,204,0.48); margin-top: 10px; line-height: 1.5; }
 
   /* drinkers mode */
-  .split { display: flex; align-items: stretch; justify-content: center; gap: 4px; margin-top: 6px; }
+  .split { display: flex; align-items: stretch; justify-content: center; gap: 4px; margin-top: 4px; }
   .split-col { flex: 1; }
-  .split-label { font-size: 12px; color: rgba(240,224,204,0.62); font-weight: 600; margin-bottom: 6px; }
-  .split-num { font-size: clamp(38px, 12vw, 54px); font-weight: 700; color: #f2e7d8; line-height: 1; letter-spacing: -1px; }
-  .split-unit { font-size: 13px; color: #d9ae6f; font-weight: 600; margin-top: 5px; }
+  .split-label { font-size: 12px; color: rgba(240,224,204,0.62); font-weight: 600; margin-bottom: 5px; }
+  .split-num { font-size: clamp(34px, 11vw, 48px); font-weight: 700; color: #f2e7d8; line-height: 1; letter-spacing: -1px; }
+  .split-unit { font-size: 13px; color: #d9ae6f; font-weight: 600; margin-top: 4px; }
   .split-divider {
     width: 1px; margin: 4px 6px;
     background: linear-gradient(rgba(217,174,111,0), rgba(217,174,111,0.4), rgba(217,174,111,0));
   }
-  .drinkers-note { font-size: 12px; color: rgba(240,224,204,0.5); margin-top: 16px; line-height: 1.5; }
+  .drinkers-note { font-size: 12px; color: rgba(240,224,204,0.5); margin-top: 10px; line-height: 1.5; }
 
   .hidden { display: none !important; }
 </style>
@@ -273,7 +280,6 @@
     </div>
 
     <div class="header">
-      <div class="kicker" id="kicker"></div>
       <h1 class="title" id="title"></h1>
       <p class="subtitle" id="subtitle"></p>
     </div>
@@ -344,11 +350,11 @@
   const DEFAULT_LANGUAGE = 'ar';   // 'ar' | 'en'
   const SHOW_STEAM = true;
 
+  // V60 is featured (full width, top); Espresso sits below it, Cold Brew to its left (RTL)
   const RATIO_DEFS = [
-    { key: 'espresso', ar: 'إسبريسو',   en: 'Espresso',     ratio: 2,  cup: 40  },
-    { key: 'v60',      ar: 'V60',        en: 'V60',          ratio: 16, cup: 180 },
-    { key: 'french',   ar: 'فرنش برس',   en: 'French Press', ratio: 12, cup: 200 },
-    { key: 'cold',     ar: 'كولد برو',   en: 'Cold Brew',    ratio: 15, cup: 250 },
+    { key: 'v60',      ar: 'V60',        en: 'V60',       ratio: 16, cup: 180 },
+    { key: 'espresso', ar: 'إسبريسو',    en: 'Espresso',  ratio: 2,  cup: 40  },
+    { key: 'cold',     ar: 'قهوة باردة', en: 'Cold Brew', ratio: 15, cup: 250 },
   ];
 
   // V60 can be dialled to 1:15, 1:16 or 1:17 — default 1:16
@@ -424,7 +430,7 @@
     container.innerHTML = '';
     RATIO_DEFS.forEach(d => {
       const b = document.createElement('button');
-      b.className = 'pill';
+      b.className = 'pill' + (d.key === 'v60' ? ' featured' : '');
       b.dataset.key = d.key;
       const name = document.createElement('span'); name.className = 'pill-name';
       const ratio = document.createElement('span'); ratio.className = 'pill-ratio';
@@ -479,7 +485,7 @@
     document.documentElement.dir = ar ? 'rtl' : 'ltr';
     el('card').dir = ar ? 'rtl' : 'ltr';
 
-    const active = RATIO_DEFS.find(d => d.key === state.ratioKey) || RATIO_DEFS[1];
+    const active = RATIO_DEFS.find(d => d.key === state.ratioKey) || RATIO_DEFS[0];
     const isV60 = state.ratioKey === 'v60';
     const ratio = isV60 ? state.v60Ratio : active.ratio;
     const cup = isV60 ? state.v60Cup : active.cup;
@@ -499,10 +505,8 @@
     el('langEn').className = 'lang-btn ' + (ar ? 'off' : 'on');
 
     // header (Arabic keeps letters joined: no letter-spacing)
-    el('kicker').textContent = t('قهوة مختصّة', 'SPECIALTY COFFEE');
-    el('kicker').style.letterSpacing = ar ? '0' : '3px';
     el('title').textContent = t('حاسبـة القهـوة', 'Coffee Brewing Calculator');
-    el('title').style.fontSize = ar ? '34px' : '32px';
+    el('title').style.fontSize = ar ? '32px' : '28px';
     el('title').style.letterSpacing = ar ? '0' : '-0.5px';
     el('subtitle').textContent = t('اضمن النسبة المثاليّـة', 'Dial in your perfect ratio');
     el('subtitle').style.letterSpacing = ar ? '0' : '2px';
@@ -527,7 +531,7 @@
       const shownRatio = d.key === 'v60' ? state.v60Ratio : d.ratio;
       b.querySelector('.pill-name').textContent = ar ? d.ar : d.en;
       b.querySelector('.pill-ratio').textContent = loc('1:' + shownRatio);
-      b.className = 'pill ' + (d.key === state.ratioKey ? 'on' : 'off');
+      b.className = 'pill' + (d.key === 'v60' ? ' featured' : '') + ' ' + (d.key === state.ratioKey ? 'on' : 'off');
     });
 
     // V60 ratio sub-selector — only visible while V60 is the chosen method
@@ -600,7 +604,41 @@
             : t(`من ${num(water)} غرام ماء · ${styleName} ${ratioStr}`, `From ${fmt(water)} g water · ${styleName} 1:${ratio}`))
         : t('بالعافيـة', 'Enter a number to see the result');
     }
+
+    // keep the whole card on screen after any content change
+    fitCard();
   }
+
+  // ---- Fit-to-viewport: the card is never scrolled. Scale it down so it — and
+  //      every result — is always fully visible, even with the keyboard open. ----
+  function fitCard() {
+    const card = el('card');
+    const scene = document.querySelector('.scene');
+    card.style.transform = 'none';               // reset to read the natural size
+    const cs = getComputedStyle(scene);
+    const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+    const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+    const availH = scene.clientHeight - padY;
+    const availW = scene.clientWidth - padX;
+    const scale = Math.min(1, availH / card.offsetHeight, availW / card.offsetWidth);
+    card.style.transform = scale < 0.999 ? 'scale(' + scale + ')' : 'none';
+  }
+  function syncViewport() {
+    const vv = window.visualViewport;
+    const scene = document.querySelector('.scene');
+    if (vv) {                                     // follow the visible area (keyboard-aware)
+      scene.style.height = vv.height + 'px';
+      scene.style.top = (vv.offsetTop || 0) + 'px';
+    }
+    fitCard();
+  }
+  window.addEventListener('resize', syncViewport);
+  window.addEventListener('orientationchange', () => setTimeout(syncViewport, 250));
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', syncViewport);
+    window.visualViewport.addEventListener('scroll', syncViewport);
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(syncViewport);
 
   // ---- Wiring ----
   el('langAr').addEventListener('click', () => { state.lang = 'ar'; render(); });
@@ -618,6 +656,7 @@
   buildV60Cups();
   buildSteam();
   render();
+  syncViewport();
 })();
 </script>
 </body>
