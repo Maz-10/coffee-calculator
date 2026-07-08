@@ -627,8 +627,31 @@
     const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
     const availH = scene.clientHeight - padY;
     const availW = scene.clientWidth - padX;
-    const scale = Math.min(1, availH / card.offsetHeight, availW / card.offsetWidth);
-    card.style.transform = scale < 0.999 ? 'scale(' + scale + ')' : 'none';
+    const H = card.offsetHeight, W = card.offsetWidth;
+    const wScale = Math.min(1, availW / W);
+    const focused = document.activeElement === el('inputField');
+    const gap = 10;
+    let s = wScale, ty = 0;
+
+    if (H * wScale <= availH) {
+      // the whole card fits — show it all, centred
+      s = wScale;
+    } else if (focused) {
+      // typing (keyboard up): don't shrink everything. Keep the input + result
+      // readable and pin them just above the keyboard; let the header scroll off.
+      const region = card.querySelector('.input-block');
+      const priorityH = H - region.offsetTop + 8;      // input + result block
+      s = Math.min(wScale, (availH - gap) / priorityH);
+      ty = (availH - H * s) / 2 - gap;                 // anchor the card's bottom above the keyboard
+    } else {
+      // small screen, not typing — scale the whole card down to fit
+      s = Math.min(wScale, availH / H);
+    }
+
+    const parts = [];
+    if (ty) parts.push('translateY(' + ty.toFixed(2) + 'px)');
+    if (s < 0.999) parts.push('scale(' + s.toFixed(4) + ')');
+    card.style.transform = parts.length ? parts.join(' ') : 'none';
   }
   function syncViewport() {
     const vv = window.visualViewport;
@@ -656,6 +679,9 @@
     if (e.target.value !== cleaned) e.target.value = cleaned;
     render();
   });
+  // re-fit when the keyboard opens/closes (some browsers don't fire visualViewport events)
+  el('inputField').addEventListener('focus', () => { fitCard(); setTimeout(syncViewport, 300); });
+  el('inputField').addEventListener('blur',  () => setTimeout(syncViewport, 300));
 
   buildTabs();
   buildRatios();
