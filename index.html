@@ -190,6 +190,10 @@
     border: 1.5px solid rgba(74,53,39,0.14);
     color: rgba(74,53,39,0.72);
   }
+  .v60-cups { grid-template-columns: repeat(2, 1fr); }
+  .v60-cup-pill { display: flex; flex-direction: column; gap: 3px; padding: 9px 4px; }
+  .cup-name { font-size: 13px; font-weight: 700; }
+  .cup-grams { font-size: 11px; font-weight: 600; opacity: 0.72; direction: ltr; }
 
   /* ---- Input ---- */
   .input-block {
@@ -283,6 +287,10 @@
         <div class="v60-label" id="v60Label"></div>
         <div class="v60-ratios" id="v60Ratios"></div>
       </div>
+      <div class="v60-options hidden" id="v60CupOptions">
+        <div class="v60-label" id="v60CupLabel"></div>
+        <div class="v60-ratios v60-cups" id="v60Cups"></div>
+      </div>
     </div>
 
     <div class="input-block">
@@ -347,7 +355,17 @@
   const V60_RATIOS = [15, 16, 17];
   const DEFAULT_V60_RATIO = 16;
 
-  const state = { mode: 'coffee', ratioKey: 'v60', raw: '', lang: DEFAULT_LANGUAGE, v60Ratio: DEFAULT_V60_RATIO };
+  // V60 cup size (grams of water per cup), used only in the "number of cups" mode
+  const V60_CUPS = [
+    { grams: 180, ar: 'كوب متوسّط', en: 'Medium cup' },
+    { grams: 240, ar: 'كوب كبير',  en: 'Large cup'  },
+  ];
+  const DEFAULT_V60_CUP = 180;
+
+  const state = {
+    mode: 'coffee', ratioKey: 'v60', raw: '', lang: DEFAULT_LANGUAGE,
+    v60Ratio: DEFAULT_V60_RATIO, v60Cup: DEFAULT_V60_CUP,
+  };
 
   // ---- Numeral helpers ----
   // Western digits -> Arabic-Indic for display (Arabic mode only)
@@ -371,6 +389,21 @@
     return Number.isInteger(r) ? String(r) : r.toFixed(1);
   }
   function num(n) { return loc(fmt(n)); }
+
+  // ---- Arabic number–noun agreement (قواعد العدد والمعدود) for "كوب" ----
+  //  1 → كوب · 2 → كوبان · 3–10 → أكواب · 11–99 → كوبًا · 100.. → كوب
+  //  (rule keys off the last two digits; non-integers fall back to the singular)
+  function cupWordAr(n) {
+    if (!(n > 0) || !Number.isInteger(n)) return 'كوب';
+    const two = n % 100;
+    if (two === 1) return 'كوب';
+    if (two === 2) return 'كوبان';
+    if (two >= 3 && two <= 10) return 'أكواب';
+    if (two >= 11 && two <= 99) return 'كوبًا';
+    return 'كوب'; // multiples of 100
+  }
+  function cupWordEn(n) { return n === 1 ? 'cup' : 'cups'; }
+  function cupWord(n) { return state.lang === 'ar' ? cupWordAr(n) : cupWordEn(n); }
 
   const el = (id) => document.getElementById(id);
 
@@ -411,6 +444,20 @@
       container.appendChild(b);
     });
   }
+  function buildV60Cups() {
+    const container = el('v60Cups');
+    container.innerHTML = '';
+    V60_CUPS.forEach(c => {
+      const b = document.createElement('button');
+      b.className = 'v60-pill v60-cup-pill';
+      b.dataset.grams = c.grams;
+      const name = document.createElement('span'); name.className = 'cup-name';
+      const grams = document.createElement('span'); grams.className = 'cup-grams';
+      b.appendChild(name); b.appendChild(grams);
+      b.addEventListener('click', () => { state.v60Cup = c.grams; render(); });
+      container.appendChild(b);
+    });
+  }
   function buildSteam() {
     const container = el('steam');
     container.innerHTML = '';
@@ -433,8 +480,9 @@
     el('card').dir = ar ? 'rtl' : 'ltr';
 
     const active = RATIO_DEFS.find(d => d.key === state.ratioKey) || RATIO_DEFS[1];
-    const ratio = state.ratioKey === 'v60' ? state.v60Ratio : active.ratio;
-    const cup = active.cup;
+    const isV60 = state.ratioKey === 'v60';
+    const ratio = isV60 ? state.v60Ratio : active.ratio;
+    const cup = isV60 ? state.v60Cup : active.cup;
     const styleName = ar ? active.ar : active.en;
     const ratioStr = loc('1:' + ratio);
 
@@ -492,11 +540,24 @@
       b.className = 'v60-pill ' + (r === state.v60Ratio ? 'on' : 'off');
     });
 
+    // V60 cup-size sub-selector — only in the "number of cups" mode with V60
+    const showCups = isV60 && state.mode === 'drinkers';
+    el('v60CupOptions').classList.toggle('hidden', !showCups);
+    el('v60CupLabel').textContent = t('حجم الكوب', 'Cup size');
+    el('v60CupLabel').style.letterSpacing = ar ? '0' : '0.5px';
+    el('v60Cups').querySelectorAll('.v60-cup-pill').forEach(b => {
+      const g = parseInt(b.dataset.grams, 10);
+      const def = V60_CUPS.find(c => c.grams === g);
+      b.querySelector('.cup-name').textContent = ar ? def.ar : def.en;
+      b.querySelector('.cup-grams').textContent = t(loc(g) + ' غرام', g + ' g');
+      b.className = 'v60-pill v60-cup-pill ' + (g === state.v60Cup ? 'on' : 'off');
+    });
+
     // input
     const inputMeta = {
       coffee:   { lbl: t('أدخل وزن القهوة', 'Enter coffee weight'), suffix: t('غرام', 'g'),    ph: loc('18')  },
       water:    { lbl: t('أدخل كمية الماء', 'Enter water amount'),  suffix: t('غرام', 'g'),    ph: loc('300') },
-      drinkers: { lbl: t('عدد الأكواب', 'Number of cups'),          suffix: t('كوب', 'cups'),  ph: loc('2')   },
+      drinkers: { lbl: t('عدد الأكواب', 'Number of cups'),          suffix: cupWord(n),        ph: loc('2')   },
     }[state.mode];
     el('inputLabel').textContent = inputMeta.lbl;
     el('inputSuffix').textContent = inputMeta.suffix;
@@ -522,8 +583,8 @@
       el('coffeeUnit').classList.toggle('hidden', !hasValue);
       el('waterUnit').classList.toggle('hidden', !hasValue);
       el('drinkersNote').textContent = hasValue
-        ? t(`${num(drinkers)} كوب × ${loc(cup)} غرام لكل كوب · ${styleName} ${ratioStr}`,
-            `${fmt(drinkers)} cups × ${cup} g per cup · ${styleName} 1:${ratio}`)
+        ? t(`${num(drinkers)} ${cupWordAr(drinkers)} × ${loc(cup)} غرام لكل كوب · ${styleName} ${ratioStr}`,
+            `${fmt(drinkers)} ${cupWordEn(drinkers)} × ${cup} g per cup · ${styleName} 1:${ratio}`)
         : t(`كل كوب ${loc(cup)} غرام (${styleName})`, `${cup} g per cup (${styleName})`);
     } else {
       const mainVal = state.mode === 'coffee' ? water : coffee;
@@ -554,6 +615,7 @@
   buildTabs();
   buildRatios();
   buildV60();
+  buildV60Cups();
   buildSteam();
   render();
 })();
