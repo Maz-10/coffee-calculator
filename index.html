@@ -93,7 +93,9 @@
     position: relative;
     width: min(90vw, 400px);
     min-height: 818px;
-    display: flex; flex-direction: column;
+    /* fixed height, with the free space spread evenly between all sections
+       so no single gap builds up between the options and the input */
+    display: flex; flex-direction: column; justify-content: space-between;
     background: rgba(246,239,229,0.42);
     backdrop-filter: blur(26px) saturate(1.35);
     -webkit-backdrop-filter: blur(26px) saturate(1.35);
@@ -220,9 +222,6 @@
     background: rgba(255,252,247,0.4);
     border: 1px solid rgba(255,255,255,0.45);
     border-radius: 18px; padding: 12px 16px; margin-bottom: 14px;
-    /* absorb the height freed by hidden options here, so input + result stay
-       anchored at the bottom and the card's total height never changes */
-    margin-top: auto;
   }
   .input-label { display: block; font-size: 12.5px; color: rgba(74,53,39,0.7); font-weight: 600; margin-bottom: 4px; }
   .input-line {
