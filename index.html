@@ -586,7 +586,11 @@
     const field = el('inputField');
     field.placeholder = inputMeta.ph;
     field.style.textAlign = ar ? 'right' : 'left';
-    if (field.value !== state.raw) field.value = state.raw;
+    // Keep numeric input in the active language's numeral system. The underlying
+    // value remains Western digits so calculations work consistently, while an
+    // Arabic interface displays Western keyboard input as Arabic-Indic numerals.
+    const displayedRaw = loc(state.raw);
+    if (field.value !== displayedRaw) field.value = displayedRaw;
 
     const unitLabel = t('غرام', 'grams');
 
@@ -684,8 +688,7 @@
   el('langEn').addEventListener('click', () => { state.lang = 'en'; render(); });
   el('inputField').addEventListener('input', (e) => {
     const cleaned = e.target.value.replace(/[^0-9٠-٩۰-۹.٫]/g, '');
-    state.raw = cleaned;
-    if (e.target.value !== cleaned) e.target.value = cleaned;
+    state.raw = toWestern(cleaned);
     render();
   });
   // re-fit when the keyboard opens/closes (some browsers don't fire visualViewport events)
